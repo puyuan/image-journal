@@ -51,7 +51,7 @@ for row in c.execute("select * from images order by CREATEDATE desc"):
 		html+= "<img src='images/%s.jpg'></img><br/>"%(md5sum)
                 dic=dict(row)
                 dic["thumb"]="images/%s_t.jpg"%md5sum
-                dic["src"]=sourceFile
+                dic["src"]="images_original/%s.jpg"%md5sum
                 dic["group"]="%d-%d"%(parsedDate.year,parsedDate.month)
                 dic["date"]=parsedDate.date().isoformat()
                 #dic["group"]="%d-%d-%d"%(parsedDate.year,parsedDate.month,week_of_month(parsedDate))

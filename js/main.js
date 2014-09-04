@@ -21,20 +21,15 @@ function createGallery(gallery){
   if(gallery.hasClass("justified-gallery"))
     return;
 
-  console.log("creating gallery", group)
+  console.log("creating gallery", group);
 
-  for (var i=0; i< gallery_images.length; i++){
+  var images=gallery.find("img");
 
-    var item=gallery_images[i];
 
-    if(item.group!=group)
-       continue;
-
-    var link=$("<a>").attr({href: item.src, title:item.CreateDate, class: "swipebox"})
-      var thumb=$("<img>").attr({"src": item.thumb});
-    link.append(thumb);
-    gallery.append(link);
-
+  for (var i=0; i< images.length; i++){
+    var image=$(images[i]);
+    var image_src=image.attr("safe-src");
+    image.attr({src: image_src});
   }
 
   gallery.justifiedGallery({
@@ -45,10 +40,9 @@ function createGallery(gallery){
     'lt640':'_t', 
     'lt1024':'_t'} 
   }).on('jg.complete', function(e){
-    gallery.find(".swipebox").swipebox();
     checkVisible();
-    
-    
+
+
   });
 }
 
@@ -63,8 +57,8 @@ $(function(){
 
     // create new week 
     if(item.group!=group){
-      var header=$("<h3>").html(item.group)
-      group=item.group
+      var header=$("<h3>").html(item.group);
+      group=item.group;
 
       gallery=$("<div>").attr({id: item.group, class: "galleria"});
       $("#container").append(header);
@@ -72,9 +66,16 @@ $(function(){
 
     }
 
+    // add thumbnails to gallery, but don't initialize it yet. 
+    var link=$("<a>").attr({href: item.src, title:item.CreateDate, class: "swipebox"});
+    var thumb=$("<img>").attr({"safe-src": item.thumb});
+    link.append(thumb);
+    gallery.append(link);
+
 
   }
 
+$(".swipebox").swipebox();
 checkVisible();
 
 
@@ -82,5 +83,5 @@ checkVisible();
 })
 
 $(window).scroll(checkVisible)
-  
-  
+
+
