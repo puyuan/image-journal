@@ -32,10 +32,13 @@ for image in images:
 	sourceFile=retrieveVal(image, "SourceFile")
 	md5sum=hashlib.md5(sourceFile.encode('utf-8')).hexdigest()
 	#os.system("exiftool -b -ThumbnailImage '%s' > images/%s_t.jpg" %(sourceFile, md5sum ))
-	os.system("convert -channel rgb -auto-level  -auto-orient -thumbnail x200 '%s'  images/%s_t.jpg" %(sourceFile, md5sum ))
+        if (not os.path.isfile("images/%s_t.jpg"%md5sum)):
+            os.system("convert  -auto-orient -thumbnail x200 '%s'  images/%s_t.jpg" %(sourceFile, md5sum ))
+        print md5sum
 	columns=(createDate, gpsLatitude, gpsLongitude, gpsAltitude, sourceFile)
 	print columns
 	try:
+                print "executing"
 		c.execute("insert into images values (?, ?, ? ,?, ?)", columns)
 	except:
 		"failed"
