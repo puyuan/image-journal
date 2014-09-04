@@ -44,8 +44,8 @@ function createGallery(gallery){
     'lt500':'', 
     'lt640':'_t', 
     'lt1024':'_t'} 
-  }).on('jg.resize', function(e){
-    
+  }).on('jg.complete', function(e){
+    gallery.find(".swipebox").swipebox();
     checkVisible();
     
     
@@ -78,7 +78,6 @@ $(function(){
 checkVisible();
 
 
-$(".swipebox").swipebox();
 
 })
 
