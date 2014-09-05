@@ -2,6 +2,7 @@ import sqlite3
 import os
 import json
 import hashlib
+import subprocess
 
 def retrieveVal(dic, key):
 	if(dic.has_key(key)):
@@ -9,22 +10,20 @@ def retrieveVal(dic, key):
 	else:
 		return "" 
 
+def getExif(file):
+    proc = subprocess.Popen("exiftool -json '%s'"%file , stdout=subprocess.PIPE, shell=True)
+    (out, err) = proc.communicate()
+    return json.loads(out)[0]
+
 db = sqlite3.connect("images.sqlite")
 c = db.cursor()
-
-c.execute('''create table images
-         (CreateDate text primary key,
-	  GPSLatitude real,
-GPSLongitude   real, 
-	GPSAltitude    real ,
-	SourceFile   text
-          )''')
-
-
-images=json.load(open("images.json"))
-for image in images:
+images=open("tools/tmp_new_files.txt", "r")
+for file in images:
 #	for k,v in image.iteritems():
 #		print k=="CreateDate"
+        file=file.strip()
+        image=getExif(file)
+
 	createDate=retrieveVal(image, "CreateDate")
 	gpsLatitude=retrieveVal(image, "GPSLatitude")
 	gpsLongitude=retrieveVal(image, "GPSLongitude")

@@ -33,7 +33,7 @@ images=[]
 for row in c.execute("select * from images order by CREATEDATE desc"):
 	sourceFile=row[4]
 	md5sum=hashlib.md5(sourceFile.encode('utf-8')).hexdigest()
-        print row[0]
+        #print row[0]
         correctedDate=re.sub(r'(\d{4}):(\d+):(.*)',r'\1-\2-\3', row[0])
         parsedDate=parse(correctedDate)
 	if  (parsedDate.year!=year or parsedDate.month!=month):
