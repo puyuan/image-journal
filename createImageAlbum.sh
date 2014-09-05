@@ -1,5 +1,7 @@
+#!/bin/bash
+source tools/env.sh
 echo "Fetching Exif info from all photos"
-exiftool   -r -n -json ~/Pictures/ > data/images.json
+exiftool   -r -n -json "$image_folder" > data/images.json
 echo "Cleaning previous sqlite DB"
 rm data/images.sqlite
 echo "Creating database..."

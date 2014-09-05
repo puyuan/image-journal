@@ -28,6 +28,8 @@ for file in images:
 #	for k,v in image.iteritems():
 #		print k=="CreateDate"
         file=file.strip()
+	file=file.replace("'", "''")
+	print file
         c.execute("select SourceFile from images where SourceFile='%s'"%file);
         row=c.fetchone()
         if (row!=None ):
@@ -46,6 +48,7 @@ for file in images:
 	gpsLongitude=retrieveVal(image, "GPSLongitude")
 	gpsAltitude=retrieveVal(image, "GPSAltitude")
 	sourceFile=retrieveVal(image, "SourceFile")
+	sourceFile=sourceFile.encode('utf-8')
 	md5sum=hashlib.md5(sourceFile.encode('utf-8')).hexdigest()
 	#os.system("exiftool -b -ThumbnailImage '%s' > images/%s_t.jpg" %(sourceFile, md5sum ))
         print md5sum
@@ -53,14 +56,14 @@ for file in images:
 	print "Inserting %s" %(sourceFile)
 	try:
 		c.execute("insert into images values (?, ?, ? ,?, ?)", columns)
-                if (not os.path.isfile("../images/%s_t.jpg"%md5sum)):
-                    os.system("convert  -auto-orient -thumbnail x200 '%s'  ../images/%s_t.jpg" %(sourceFile, md5sum ))
-                if (not os.path.isfile("../images_original/%s.jpg"%md5sum)):
-                    os.system("convert   -resize 606x400^ -gravity center  -crop 606x400+0+0  -strip -auto-orient -quality 86 '%s'  ../images_original/%s.jpg" %(sourceFile, md5sum ))
+		db.commit()
+		if (not os.path.isfile("../images/%s_t.jpg"%md5sum)):
+		    os.system("convert  -auto-orient -thumbnail x200 '%s'  ../images/%s_t.jpg" %(sourceFile, md5sum ))
+		if (not os.path.isfile("../images_original/%s.jpg"%md5sum)):
+		    os.system("convert   -resize 1664x936^ -gravity center  -crop 1664x936+0+0  -strip -auto-orient -quality 86 '%s' ../images_original/%s.jpg" %(sourceFile, md5sum ))
 	except:
-		"failed"
+		print "failed to insert, perhaps duplicate"
 
-db.commit()
 db.close()
 	#c.execute()
 

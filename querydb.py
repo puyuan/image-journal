@@ -33,9 +33,11 @@ images=[]
 for row in c.execute("select * from images order by CREATEDATE desc"):
 	sourceFile=row[4]
 	md5sum=hashlib.md5(sourceFile.encode('utf-8')).hexdigest()
-        #print row[0]
-        correctedDate=re.sub(r'(\d{4}):(\d+):(.*)',r'\1-\2-\3', row[0])
-        parsedDate=parse(correctedDate)
+        correctedDate=re.sub(r'(\d{4}):(\d{2}):(\d{2}\s+\d{2}:\d{2}:\d{2}).*',r'\1-\2-\3', row[0])
+	try:
+		parsedDate=parse(correctedDate)
+	except:
+		continue
 	if  (parsedDate.year!=year or parsedDate.month!=month):
 		year=parsedDate.year
 		month=parsedDate.month
@@ -56,6 +58,13 @@ for row in c.execute("select * from images order by CREATEDATE desc"):
                 dic["date"]=parsedDate.date().isoformat()
                 #dic["group"]="%d-%d-%d"%(parsedDate.year,parsedDate.month,week_of_month(parsedDate))
                 images.append(dic)
+		sourceFile=dic["SourceFile"].encode("utf-8")
+		print sourceFile, md5sum
+		if (not os.path.isfile("images/%s_t.jpg"%md5sum)):
+		    os.system("convert  -auto-orient -thumbnail x200 \"%s\"  images/%s_t.jpg" %(sourceFile, md5sum ))
+		if (not os.path.isfile("images_original/%s.jpg"%md5sum)):
+		    os.system("convert   -resize 1664x936^ -gravity center  -crop 1664x936+0+0  -strip -auto-orient -quality 86 \"%s\"  images_original/%s.jpg" %(sourceFile, md5sum ))
+		    print "converted"
 
 html+="</body></html>"
 f.write("gallery_images="+json.dumps(images))
