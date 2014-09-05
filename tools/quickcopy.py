@@ -12,7 +12,7 @@ def retrieveVal(dic, key):
 		return "" 
 
 def getExif(file):
-    proc = subprocess.Popen("exiftool -json '%s'"%file , stdout=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen("exiftool -n  -json '%s'"%file , stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
     try:
         data=json.loads(out)[0]
