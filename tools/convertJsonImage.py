@@ -13,5 +13,5 @@ c = db.cursor()
 
 images=[]
 for row in c.execute("select * from images order by CREATEDATE desc"):
-    print row["SourceFile"]
+    print row["SourceFile"].encode("utf8")
 
