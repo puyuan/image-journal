@@ -1,6 +1,6 @@
 import os
 import re
-f=open("filelist_sort_by_size", "r")
+f=open("../data/filelist_sort_by_size", "r")
 
 filecount={}
 
@@ -17,7 +17,7 @@ for line in f:
 #	print k, v
 
 
-f=open("filelist_sort_by_size", "r")
+f=open("../data/filelist_sort_by_size", "r")
 for line in f:
 	arr=line.split(",")
 	if len(arr)<2:

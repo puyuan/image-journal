@@ -9,7 +9,7 @@ def retrieveVal(dic, key):
 	else:
 		return "" 
 
-db = sqlite3.connect("images.sqlite")
+db = sqlite3.connect("data/images.sqlite")
 c = db.cursor()
 
 c.execute('''create table images
@@ -21,7 +21,7 @@ GPSLongitude   real,
           )''')
 
 
-images=json.load(open("images.json"))
+images=json.load(open("data/images.json"))
 for image in images:
 #	for k,v in image.iteritems():
 #		print k=="CreateDate"

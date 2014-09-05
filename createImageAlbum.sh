@@ -1,7 +1,7 @@
 echo "Fetching Exif info from all photos"
-exiftool   -r -n -json ~/Pictures/ > images.json
+exiftool   -r -n -json ~/Pictures/ > data/images.json
 echo "Cleaning previous sqlite DB"
-rm images.sqlite
+rm data/images.sqlite
 echo "Creating database..."
 python createdb.py
 echo "Creating Json File"

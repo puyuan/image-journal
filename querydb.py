@@ -20,7 +20,7 @@ def week_of_month(dt):
 
     return int(ceil(adjusted_dom/7.0))
 
-db = sqlite3.connect("images.sqlite")
+db = sqlite3.connect("data/images.sqlite")
 db.row_factory=sqlite3.Row
 c = db.cursor()
 
