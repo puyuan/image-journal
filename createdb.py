@@ -12,13 +12,13 @@ def retrieveVal(dic, key):
 db = sqlite3.connect("data/images.sqlite")
 c = db.cursor()
 
-#c.execute('''create table images
-#         (CreateDate text primary key,
-#	  GPSLatitude real,
-#GPSLongitude   real, 
-#	GPSAltitude    real ,
-#	SourceFile   text
-#          )''')
+c.execute('''create table images
+         (CreateDate text primary key,
+	  GPSLatitude real,
+GPSLongitude   real, 
+	GPSAltitude    real ,
+	SourceFile   text
+          )''')
 
 
 images=json.load(open("data/images.json"))

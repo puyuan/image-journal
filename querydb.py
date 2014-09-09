@@ -46,7 +46,7 @@ for row in c.execute("select * from images order by CREATEDATE desc"):
 #	print delta.years, delta.months,  delta.days, delta.hours
 #	print timestamp
 #	print parsedDate
-	if(delta.years==0 and delta.months==0 and delta.days==0 and delta.hours==0):
+	if(delta.years==0 and delta.months==0 and delta.days==0 and delta.hours==0 and delta.minutes<5):
             pass
 	else:
 		timestamp=parsedDate

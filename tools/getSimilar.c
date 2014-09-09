@@ -12,13 +12,18 @@ int count=0;
 char * str;
 static int callback(void *NotUsed, int argc, char **argv, char **azColName){
   int i;
+  char *pointer;
   time_t epoch;
   char *fname;
+  fname=argv[4];
 
-  strptime(argv[0], "%Y:%m:%d %H:%M:%S", &tm);
+
+  if(!strptime(argv[0], "%Y:%m:%d %H:%M:%S", &tm))
+	return 0;
   epoch=mktime(&tm);
   //    scanf("%d%d%d:%d%d:%d%d %d%d:%d%d:%d%d", str );
-  fname=argv[4];
+
+
   if( access( fname, F_OK ) != -1 ) {
     // file exists
   } else {
@@ -27,19 +32,23 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName){
   }
 
 
+   if ((int)epoch -  curTimestamp==0)
+	return 0;
+
   if (abs((int)epoch -  curTimestamp)< 60*1){
-    //      printf("current time:%d", (int)epoch);
     ;
 
   }else{
+          //printf("current time:%d and current timestamp %d", (int) epoch, curTimestamp);
     if (count>1)
       printf("%s", str);
-    str=malloc(sizeof(char)*(400));
+    str=malloc(sizeof(char)*(1000000));
     count=0;
   }
-//printf("%s = %s\n", azColName[0], argv[0] ? argv[0] : "NULL");
+// printf("%s = %s\n", azColName[0], argv[0] ? argv[0] : "NULL");
   strcat(str, argv[4]);
   strcat(str, "\n");
+
 
   /*
      printf("year: %d; month: %d; day: %d;\n",
@@ -61,7 +70,7 @@ int main(){
   sqlite3 *db;
   int rc;
   char *zErrMsg = 0;
- str=malloc(sizeof(char)*(400));
+ str=malloc(sizeof(char)*(1000));
   rc=sqlite3_open("../data/images.sqlite", &db);
   char cwd[1024];
   if (getcwd(cwd, sizeof(cwd)) )

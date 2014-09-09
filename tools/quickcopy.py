@@ -44,11 +44,12 @@ for file in images:
         if(createDate=="" or createDate==None):
             createDate=datetime.now().isoformat(" ")
             print createDate
+            continue
 	gpsLatitude=retrieveVal(image, "GPSLatitude")
 	gpsLongitude=retrieveVal(image, "GPSLongitude")
 	gpsAltitude=retrieveVal(image, "GPSAltitude")
 	sourceFile=retrieveVal(image, "SourceFile")
-	sourceFile=sourceFile.encode('utf-8')
+	#sourceFile=sourceFile.encode('utf-8')
 	md5sum=hashlib.md5(sourceFile.encode('utf-8')).hexdigest()
 	#os.system("exiftool -b -ThumbnailImage '%s' > images/%s_t.jpg" %(sourceFile, md5sum ))
         print md5sum
