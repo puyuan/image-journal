@@ -61,10 +61,10 @@ for row in c.execute("select * from images order by CREATEDATE desc"):
 		sourceFile=dic["SourceFile"].encode("utf-8")
 		print sourceFile, md5sum
 		if (not os.path.isfile("images/%s_t.jpg"%md5sum)):
-		    os.system("convert  -auto-orient -thumbnail x200 \"%s\"  images/%s_t.jpg" %(sourceFile, md5sum ))
+			os.system("convert  -auto-orient -thumbnail x300 \"%s\"  images/%s_t.jpg" %(sourceFile, md5sum ))
 		if (not os.path.isfile("images_original/%s.jpg"%md5sum)):
-		    os.system("convert -channels rgb -auto-level  -resize 1664x936^ -gravity center  -crop 1664x936+0+0  -strip -auto-orient -quality 86 \"%s\"  images_original/%s.jpg" %(sourceFile, md5sum ))
-		    print "converted"
+			os.system("convert \"%s\" -channel rgb -auto-level  -resize 1664x936^ -gravity center  -crop 1664x936+0+0  -strip -auto-orient -quality 86   images_original/%s.jpg" %(sourceFile, md5sum ))
+			print "converted"
 
 html+="</body></html>"
 f.write("gallery_images="+json.dumps(images))

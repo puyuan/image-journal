@@ -38,7 +38,8 @@ function createGallery(gallery){
     'lt320':'_t', 
     'lt500':'', 
     'lt640':'_t', 
-    'lt1024':'_t'} 
+    'lt1024':'_t'}, 
+    rowHeight: "300px" 
   }).on('jg.complete', function(e){
     checkVisible();
 
