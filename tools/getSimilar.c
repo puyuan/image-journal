@@ -4,6 +4,7 @@
 #include <sqlite3.h>
 #include <time.h>
 #include <string.h>
+#include <locale.h>
 
 int curTimestamp=123;
 struct tm tm;
@@ -33,20 +34,27 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName){
   } 
 
 
+//   printf("%s\n",argv[0]);
+//   printf("%s\n",argv[4]);
   // can't parse time
-  if(!strptime(argv[0], "%Y:%m:%d %H:%M:%S", &tm))
+  if(!strptime(argv[0], "%Y:%m:%d %H:%M:%S", &tm)){ 
+//    printf("cant parse\n");
     return 0;
+
+}
 
   //    scanf("%d%d%d:%d%d:%d%d %d%d:%d%d:%d%d", str );
 
   epoch=mktime(&tm);
-  if (abs((int)epoch -  curTimestamp) >= 60*1){    //printf("current time:%d and current timestamp %d", (int) epoch, curTimestamp);
+  if (abs((int)epoch -  curTimestamp) >= 10*1){    //printf("current time:%d and current timestamp %d", (int) epoch, curTimestamp);
     if (count>1)
       printCollection();
     count=0;
   }
   // printf("%s = %s\n", azColName[0], argv[0] ? argv[0] : "NULL");
-  collection[count]=argv[4];
+  char *str=malloc(sizeof(char)*300);
+  strcpy(str, argv[4]);
+  collection[count]=str;
   curTimestamp=(int) epoch;
   count++;
   return 0;
@@ -64,6 +72,7 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName){
 
 
 int main(){
+ setlocale(LC_ALL, "");
   sqlite3 *db;
   int rc;
   char *zErrMsg = 0;
@@ -82,6 +91,5 @@ int main(){
   }
   sqlite3_close(db);
   return 0;
-
 
 }

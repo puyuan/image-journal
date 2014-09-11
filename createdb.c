@@ -13,6 +13,7 @@
 #include <string.h>
 #include <libexif/exif-data.h>
 #include <glib-2.0/glib.h>
+#include <locale.h>
 
 int readImage(char *path);
 GHashTable  *hash;
@@ -126,7 +127,9 @@ void testPopen(){
 
   FILE *fp;
   char  path[1024];
-  char *command="find ~/Pictures -iname *.jpg";
+  char command[100];
+  
+  sprintf(command,"find '%s' -iname *.jpg",getenv("image_folder")  );
 
   fp = popen(command, "r");
   while (fgets(path, sizeof(path)-1, fp)!=NULL){
@@ -220,7 +223,7 @@ int readImage(char *path){
 static int processResult(void *NotUsed, int argc, char **argv, char **azColName){
 
   insert(argv[4]);
-  printf("inserting %s\n", argv[4]);
+ // printf("inserting %s\n", argv[4]);
   return 0;
 }
 
@@ -249,6 +252,18 @@ int insertImageRecord(char *createDate, char *gpsLatitude, char * gpsLongitude, 
 
   if( rc!=SQLITE_OK ){
     fprintf(stderr, "SQL error: %s\n", zErrMsg);
+  if (strcmp("UNIQUE constraint failed: images.CreateDate", zErrMsg)==0){
+	  char num[4];
+	  char temp[30];
+	  strcpy(temp, createDate);
+	  sprintf(num,"%d", count );
+	  createDate=strcat(temp, num );
+	  count++;
+	
+	  sprintf(str, "insert into images values ('%s', '%s', '%s' ,'%s', '%s')", createDate, gpsLatitude, gpsLongitude, gpsAltitude, sourceFile);
+	  rc=sqlite3_exec(db, str , 0, 0, &zErrMsg);
+			}
+	
     sqlite3_free(zErrMsg);
   }
 }
@@ -265,6 +280,7 @@ int main(int argc, char **argv)
      }
 
 */
+  setlocale(LC_ALL, "");
   int rc;
   rc=sqlite3_open("data/images.sqlite", &db);
   if( rc ){
