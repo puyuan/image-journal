@@ -17,6 +17,7 @@
 int readImage(char *path);
 GHashTable  *hash;
 sqlite3 *db;
+int count;
 /* Remove spaces on the right of the string */
 static void trim_spaces(char *buf)
 {
@@ -170,6 +171,13 @@ int readImage(char *path){
   */
   a=fetch_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_X_DIMENSION);
   b=fetch_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+  printf("this is%s \n", b);
+  if (b==NULL){
+    b=malloc(sizeof(char)*1024);
+    sprintf(b, "jumbo%d%d", time(NULL), count);
+    count++;
+  }
+
   c=fetch_tag(ed, EXIF_IFD_GPS, EXIF_TAG_GPS_LONGITUDE );
   d=fetch_tag(ed, EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE );
   e=fetch_tag(ed, EXIF_IFD_GPS, EXIF_TAG_GPS_ALTITUDE );
