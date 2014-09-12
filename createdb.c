@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #include <libexif/exif-data.h>
 #include <glib-2.0/glib.h>
 #include <locale.h>
@@ -54,9 +56,8 @@ static char * fetch_tag(ExifData *d, ExifIfd ifd, ExifTag tag)
   /* See if this tag exists */
   ExifEntry *entry = exif_content_get_entry(d->ifd[ifd],tag);
   if (entry) {
-    int size=sizeof(char) * 1024;
+    int size=sizeof(char) * 300;
     char *buf=malloc(size);
-    strcpy(buf, "test");
 
     /* Get the contents of the tag in human-readable form */
     exif_entry_get_value(entry, buf, size);
@@ -100,7 +101,7 @@ static void show_mnote_tag(ExifData *d, unsigned tag)
 
     /* Loop through all MakerNote tags, searching for the desired one */
     for (i=0; i < num; ++i) {
-      char * buf= (char *) malloc(sizeof(char)*1024);
+      char  buf[300];
       if (exif_mnote_data_get_id(mn, i) == tag) {
         if (exif_mnote_data_get_value(mn, i, buf, sizeof(buf))) {
           /* Don't bother printing it if it's entirely blank */
@@ -117,7 +118,7 @@ static void show_mnote_tag(ExifData *d, unsigned tag)
 
 
 void insert(char *key){
-  char *new_str=malloc(sizeof(char)*1024);
+  char *new_str=malloc(sizeof(char)*300);
   strcpy(new_str, key);
   g_hash_table_insert(hash, new_str, "hi");
 
@@ -174,10 +175,9 @@ int readImage(char *path){
   */
   a=fetch_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_X_DIMENSION);
   b=fetch_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
-  printf("this is%s \n", b);
   if (b==NULL){
     b=malloc(sizeof(char)*1024);
-    sprintf(b, "jumbo%d%d", time(NULL), count);
+    sprintf(b, "jumbo%d%d", (int) time(NULL), count);
     count++;
   }
 
@@ -185,6 +185,11 @@ int readImage(char *path){
   d=fetch_tag(ed, EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE );
   e=fetch_tag(ed, EXIF_IFD_GPS, EXIF_TAG_GPS_ALTITUDE );
   insertImageRecord(b, c, d,e, path);
+  free(a);
+  free(b);
+  free(c);
+  free(d);
+  free(e);
   
   /* These are much less likely to be useful */
   show_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_USER_COMMENT);
@@ -294,4 +299,13 @@ int main(int argc, char **argv)
   querydb();
   testPopen();
   sqlite3_close(db);
+  char *test=malloc(sizeof(char)*200000);
+  struct rusage memory;
+  getrusage(RUSAGE_SELF, &memory);
+  printf("Usage: %ld\n", memory.ru_ixrss);
+  printf("Usage: %ld\n", memory.ru_isrss);
+  printf("Usage: %ld\n", memory.ru_idrss);
+  printf("Max: %ld\n", memory.ru_maxrss);
+
+
 }
