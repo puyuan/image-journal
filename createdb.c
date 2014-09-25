@@ -80,7 +80,9 @@ char * str="create table if not exists images \
 	  GPSLatitude real, \
 GPSLongitude   real,  \
 	GPSAltitude    real ,\
-	SourceFile   text \
+	SourceFile   text ,\
+	Width real, \
+	Height real \
     )";
    
 int rc;
@@ -166,7 +168,7 @@ int readImage(char *path){
   /* Show all the tags that might contain information about the
    * photographer
    */
-  char * a, *b, *c, *d, *e;
+  char * a, *b, *c, *d, *e, *height;
   /*
   show_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_X_DIMENSION);
   show_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
@@ -174,6 +176,7 @@ int readImage(char *path){
   show_tag(ed, EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE );
   */
   a=fetch_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_X_DIMENSION);
+  height=fetch_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_Y_DIMENSION);
   b=fetch_tag(ed, EXIF_IFD_0, EXIF_TAG_DATE_TIME);
   if (b==NULL){
     b=malloc(sizeof(char)*1024);
@@ -184,12 +187,13 @@ int readImage(char *path){
   c=fetch_tag(ed, EXIF_IFD_GPS, EXIF_TAG_GPS_LONGITUDE );
   d=fetch_tag(ed, EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE );
   e=fetch_tag(ed, EXIF_IFD_GPS, EXIF_TAG_GPS_ALTITUDE );
-  insertImageRecord(b, c, d,e, path);
+  insertImageRecord(b, c, d,e, path, a , height);
   free(a);
   free(b);
   free(c);
   free(d);
   free(e);
+  free(height);
   
   /* These are much less likely to be useful */
   show_tag(ed, EXIF_IFD_EXIF, EXIF_TAG_USER_COMMENT);
@@ -246,11 +250,11 @@ int querydb(){
   return 0;
 }
 
-int insertImageRecord(char *createDate, char *gpsLatitude, char * gpsLongitude, char * gpsAltitude, char * sourceFile){
+int insertImageRecord(char *createDate, char *gpsLatitude, char * gpsLongitude, char * gpsAltitude, char * sourceFile, char * width, char* height){
 
   char str[1024];
   char *zErrMsg = 0;
-  sprintf(str, "insert into images values ('%s', '%s', '%s' ,'%s', '%s')", createDate, gpsLatitude, gpsLongitude, gpsAltitude, sourceFile);
+  sprintf(str, "insert into images values ('%s', '%s', '%s' ,'%s', '%s','%s', '%s')", createDate, gpsLatitude, gpsLongitude, gpsAltitude, sourceFile, width, height);
 
 //  printf(str);
   int rc=sqlite3_exec(db, str , 0, 0, &zErrMsg);
