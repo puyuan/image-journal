@@ -1,5 +1,6 @@
 import dateutil.parser
 import re
+from findImage import findImage
 
 
 def discardEmptyLine(line):
@@ -23,7 +24,10 @@ for line in f:
     if (discardEmptyLine(line)==1):
         continue
 
-    parseDate(line)
+    date=parseDate(line)
+    if date!=0:
+       print  findImage(line)
+
    
 
 
