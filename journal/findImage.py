@@ -47,16 +47,29 @@ def closestDate(imageList, date):
 def recurse(imageList, low, high, minimun, date):
         middle=int(ceil((low+high)/2.0))
         print low, high, middle
-        if (low>=high):
-            return minimun
+        if (abs(low-high)<=1):
+            return minDate(imageList, low, high, date)
         createDate=imageList[middle]["CREATEDATE"].replace(":", "-", 2).replace(" ", "T", 1)
 	print createDate, date
 
         if(date < createDate):
             return recurse(imageList, low, middle, middle, date);
         else:
-            return recurse(imageList, middle+1, high, middle,  date);
+            return recurse(imageList, middle, high, middle,  date);
+
+def minDate(imageList, dateAIndex, dateBIndex, targetDate):
+    dateA=imageList[dateAIndex]["CREATEDATE"].replace(":", "-", 2).replace(" ", "T", 1)
+    dateB=imageList[dateBIndex]["CREATEDATE"].replace(":", "-", 2).replace(" ", "T", 1)
+    dateA=parse(dateA)
+    dateB=parse(dateB)
+    targetDate=parse(targetDate)
+    deltaA=dateA-targetDate
+    deltaB=dateB-targetDate
+    if(abs(deltaA)>abs(deltaB)):
+        return dateBIndex
+
+    return dateAIndex
 
 
-print findImage("2014-10-04T13:20:00")
+print findImage("2014-09-14T10:28:00")
 
