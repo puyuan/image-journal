@@ -58,10 +58,10 @@ for file in images:
 	try:
 		c.execute("insert into images values (?, ?, ? ,?, ?)", columns)
 		db.commit()
-		if (not os.path.isfile("../images/%s_t.jpg"%md5sum)):
-		    os.system("convert  -auto-orient -thumbnail x200 '%s'  ../images/%s_t.jpg" %(sourceFile, md5sum ))
-		if (not os.path.isfile("../images_original/%s.jpg"%md5sum)):
-		    os.system("convert   -resize 1664x936^ -gravity center  -crop 1664x936+0+0  -strip -auto-orient -quality 86 '%s' ../images_original/%s.jpg" %(sourceFile, md5sum ))
+#		if (not os.path.isfile("../images/%s_t.jpg"%md5sum)):
+#		    os.system("convert  -auto-orient -thumbnail x200 '%s'  ../images/%s_t.jpg" %(sourceFile, md5sum ))
+#		if (not os.path.isfile("../images_original/%s.jpg"%md5sum)):
+#		    os.system("convert   -resize 1920x1080^ -gravity center   -auto-orient -quality 86 '%s' ../images_original/%s.jpg" %(sourceFile, md5sum ))
 	except:
 		print "failed to insert, perhaps duplicate"
 

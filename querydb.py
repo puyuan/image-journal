@@ -30,10 +30,10 @@ year=''
 timestamp=parse("1933-02-02").date()
 #f=open("gallery.json", "w")
 images=[]
+imageDir="images_original"
 for row in c.execute("select * from images  order by CREATEDATE desc"):
 	sourceFile=row[4]
         correctedDate=re.sub(r'(\d{4}):(\d{2}):(\d{2}\s+\d{2}:\d{2}:\d{2}).*',r'\1-\2-\3', row[0])
-	md5sum=hashlib.md5(correctedDate.encode('utf-8')).hexdigest()
 	print correctedDate
 	try:
 		parsedDate=parse(correctedDate)
@@ -43,6 +43,13 @@ for row in c.execute("select * from images  order by CREATEDATE desc"):
 		year=parsedDate.year
 		month=parsedDate.month
 		html+="<h3>%s/%s</h3>"%(year, month)
+		imageDir="images_original/%s/%s"%(year, month)
+		try:
+			os.makedirs(imageDir)
+		except:
+			continue
+	md5sum=hashlib.md5("%s:%s:%s:%s:%s"%(parsedDate.year,parsedDate.month, parsedDate.day,parsedDate.hour,parsedDate.minute)).hexdigest()
+
 	delta= relativedelta( timestamp,parsedDate)
 #	print delta.years, delta.months,  delta.days, delta.hours
 #	print timestamp
@@ -63,14 +70,14 @@ for row in c.execute("select * from images  order by CREATEDATE desc"):
 		print sourceFile, md5sum
 		if (not os.path.isfile("images/%s_t.jpg"%md5sum)):
 			os.system("convert  -auto-orient -thumbnail x300 \"%s\"  images/%s_t.jpg" %(sourceFile, md5sum ))
-		if (not os.path.isfile("images_original/%s.jpg"%md5sum)):
-			os.system("convert \"%s\" -channel rgb -auto-level  -resize 3264x2448^ -gravity center   -auto-orient -quality 86   images_original/%s.jpg" %(sourceFile, md5sum ))
+		if (not os.path.isfile("%s/%s.jpg"%(imageDir, md5sum))):
+			os.system("convert \"%s\" -channel rgb -auto-level  -resize 1920x1080^  -auto-orient -quality 86   %s/%s.jpg" %(sourceFile,imageDir,  md5sum ))
 		#os.system("convert \"%s\" -channel rgb -auto-level  -resize 1664x936^ -gravity center    -strip -auto-orient -quality 86   images_original/%s.jpg" %(sourceFile, md5sum ))
 		
-		if (not os.path.isfile("images_wide/%s.jpg"%md5sum)):
-			cmd="node \"/usr/local/lib/node_modules/smartcrop-cli/smartcrop-cli.js\" --width 1664 --height 936 --minScale 1.0 --maxScale 1.0  images_original/%s.jpg images_wide/%s.jpg "%(md5sum, md5sum) 
+#		if (not os.path.isfile("images_wide/%s.jpg"%md5sum)):
+#			cmd="node \"/usr/local/lib/node_modules/smartcrop-cli/smartcrop-cli.js\" --width 1664 --height 936 --minScale 1.0 --maxScale 1.0  images_original/%s.jpg images_wide/%s.jpg "%(md5sum, md5sum) 
 	#		os.system(cmd);
-			print "converted"
+#			print "converted"
 
 html+="</body></html>"
 f.write("gallery_images="+json.dumps(images))
