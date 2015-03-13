@@ -16,10 +16,14 @@ The largest resolution photo will be kept, while all others will be deleted
 createImageAlbum.sh 
 - creates a new photo album from image folder. This will retrieve exif info from each folder. 
 
+
 tools/quickCopy.sh
 - copy any new images into existing photo album. This operation will be quicker than createImageAlbum.sh, which creates
 album from scratch. Use quickCopy when adding new photos to the album. 
+use thread.py to do a quickcopy of images
+
+2015-03-13  query.py is deprecated and may not work as expected
 
 Web Presentation:
 - gallery.html - Show's a timeline of all photos in your album by selecting representative photos for each timeframe. i.e. if you
-take successive photos within a short time frame, only one will be shown. The selection is done automatically. 
+make successive photos within a short time frame, only one will be shown. The selection is done automatically. 
