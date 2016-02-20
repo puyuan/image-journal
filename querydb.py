@@ -71,7 +71,7 @@ for row in c.execute("select * from images  order by CREATEDATE desc"):
 		if (not os.path.isfile("images/%s_t.jpg"%md5sum)):
 			os.system("convert  -auto-orient -thumbnail x300 \"%s\"  images/%s_t.jpg" %(sourceFile, md5sum ))
 		if (not os.path.isfile("%s/%s.jpg"%(imageDir, md5sum))):
-			os.system("convert \"%s\" -channel rgb -auto-level  -resize 1920x1080^  -auto-orient -quality 86   %s/%s.jpg" %(sourceFile,imageDir,  md5sum ))
+			os.system("convert \"%s\" -channel rgb -auto-level  -resize 1920x1080^ -gravity center   -auto-orient -quality 86   %s/%s.jpg" %(sourceFile,imageDir,  md5sum ))
 		#os.system("convert \"%s\" -channel rgb -auto-level  -resize 1664x936^ -gravity center    -strip -auto-orient -quality 86   images_original/%s.jpg" %(sourceFile, md5sum ))
 		
 #		if (not os.path.isfile("images_wide/%s.jpg"%md5sum)):
