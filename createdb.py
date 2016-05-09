@@ -23,8 +23,6 @@ GPSLongitude   real,
 
 images=json.load(open("data/images.json"))
 for image in images:
-#	for k,v in image.iteritems():
-#		print k=="CreateDate"
 	createDate=retrieveVal(image, "CreateDate")
 	gpsLatitude=retrieveVal(image, "GPSLatitude")
 	gpsLongitude=retrieveVal(image, "GPSLongitude")

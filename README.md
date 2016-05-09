@@ -1,5 +1,7 @@
 image-journal
 =============
+
+
 Ever wanted to clean up duplicate photos in your hard drive and folders, but don't want to do it manually. This tool
 automatically clean up your image folder and deletes duplicate photos, while preserving the best copy (by resolution). 
 
@@ -7,6 +9,10 @@ Ever wanted to see a timeline of your photos without having to organize all your
 and selects representative photos based on timestamp. It shows a summary of all your photos without any clutter and manual 
 organization.  e.g. if you taken tons of photos in succession in a short time frame, only a representative will be selected, which is good enough
 if you are lazy to organize photos.  
+
+## Dependencies
+  - Exiftools
+  - sqlite
 
 
 tools/cleanPictures.sh  path_to_folder
