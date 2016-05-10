@@ -17,6 +17,9 @@ setup(
     author='Paul Yuan',
     author_email='puyuan1@gmail.com',
     url='https://github.com/puyuan',
+    install_requires=[
+        'markdown',
+    ],
     license=license,
     packages=find_packages(exclude=('tests', 'docs'))
 )
