@@ -131,6 +131,7 @@ class PhotoIndex():
             logger.info(file)
 
     def remove_duplicate(self):
+      self.insert_new_images()
       for file in self.fetch_new_images():
           os.remove(file)
 
@@ -142,4 +143,4 @@ photoIndex=PhotoIndex(image_path)
 photoIndex.create_index()
 photoIndex.insert_new_images()
 photoIndex.check_new_images()
-#photoIndex.remove_duplicate()
+photoIndex.remove_duplicate()
