@@ -130,6 +130,11 @@ class PhotoIndex():
         for file in fileList:
             logger.info(file)
 
+    def remove_duplicate(self):
+      for file in self.fetch_new_images():
+          os.remove(file)
+
+
                
 
 image_path="/mnt/hgfs/Pictures"
@@ -137,3 +142,4 @@ photoIndex=PhotoIndex(image_path)
 photoIndex.create_index()
 photoIndex.insert_new_images()
 photoIndex.check_new_images()
+#photoIndex.remove_duplicate()
