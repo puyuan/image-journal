@@ -12,7 +12,7 @@ with open('LICENSE') as f:
 setup(
     name='photo-dedup',
     version='0.1',
-    description='A photo deduplicator based on Exif meta data',
+    description='A simple photo deduplicator tool written in Python',
     long_description=readme,
     author='Paul Yuan',
     author_email='puyuan1@gmail.com',
