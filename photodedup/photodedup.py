@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # Paul Yuan 2016
-
-
 import os
 import sys
 import argparse
@@ -10,22 +8,21 @@ import sqlite3
 import logging
 from logging.config import fileConfig
 from os.path import join
+import shutil
 
 
 fileConfig('logging_config.ini')
 logger = logging.getLogger()
 
-
-
 class PhotoIndex():
     def __init__(self, image_folder_path):
         self.db=sqlite3.connect("images.sqlite")
         self.image_folder_path=image_folder_path
-	
-	def create_index(self):
-		logger.info("Create table if not exists")
-		c = self.db.cursor()
-		c.execute('''create table if not exists images
+
+    def create_index(self):
+        logger.info("Create table if not exists")
+        c = self.db.cursor()
+        c.execute('''create table if not exists images
 				 (timestamp text primary key,
 				  CreateDate text,
 				  GPSLatitude real,
@@ -36,7 +33,7 @@ class PhotoIndex():
 
     def insert_images(self, new_images):
         c = self.db.cursor()
-        for metadataList in self.__get_new_images_metadata(new_images):
+        for metadataList in self.__get_images_metadata(new_images):
 		
             columns= [(d.get("EXIF:CreateDate", d.get("File:FileModifyDate","")),
                        d.get("EXIF:CreateDate", ""),
@@ -56,8 +53,8 @@ class PhotoIndex():
 
     def fetch_new_images(self):
         logger.info("Fetching new images")
-	    self.__dumpDB()
-	    self.__dumpImageFolder()
+        self.__dumpDB()
+        self.__dumpImageFolder()
 
         with open('/tmp/imagefolder_files.log')  as f, open('/tmp/sqlite_files.log') as f2:
             lines1 = set(map(str.rstrip, f))
@@ -73,41 +70,53 @@ class PhotoIndex():
         logger.info("List is not empty, following files are left:")
         for file in fileList:
             logger.info(file)
-		return True
+        return True
+
 
     def remove_images(self, duplicate_images):
       for file in duplicate_images:
           os.remove(file)
+
+    def copy_duplicates(self):
+      self.insert_new_images()
+      count=0
+      for file in self.fetch_new_images():
+          count+=1
+          shutil.copy(file, '/tmp/test/%d.jpg'%(count))
+
+
 		  
-	def __get_images_metadata(self, images):
-		tags=["ImageWidth", "ImageHeight", "SourceFile","CreateDate", 
+    def __get_images_metadata(self, images):
+        tags=["ImageWidth", "ImageHeight", "SourceFile","CreateDate",
 			  "FileModifyDate", "GPSLatitude", "GPSLongitude", "GPSAltitude"]
 
-		with exiftool.ExifTool() as et:
-			fileList=[]
-			count=0
-			for filename in images:
-				fileList.append(filename)
-				count+=1
-				if (count %1000==0):
-					try:
-							logger.info("Running ExifTool")
-							yield et.get_tags_batch(tags, fileList)
-					except:
-							 logger.warn("exiftool could not process, perhaps folder is empty?")
-			# process remaining list
-			if fileList:
-				try:
-						yield et.get_tags_batch(tags, fileList)
-				except:
-						 logger.warn("exiftool could not process, perhaps folder is empty?")
-						 
-	def __dumpDB(self):
+        with exiftool.ExifTool() as et:
+            fileList = []
+            count = 0
+            for filename in images:
+                fileList.append(filename)
+                logger.info('Extracting metadata for: %s', filename)
+                count += 1
+                if (count % 1000 == 0):
+                    try:
+                        logger.info("Processing with ExifTool. \n Please wait..")
+                        yield et.get_tags_batch(tags, fileList)
+                    except:
+                        logger.warn("exiftool could not process, perhaps folder is empty?")
+                    fileList=[]
+            # process remaining list
+            if fileList:
+                try:
+                    yield et.get_tags_batch(tags, fileList)
+                except:
+                    logger.warn("exiftool could not process, perhaps folder is empty?")
+
+    def __dumpDB(self):
         logger.info("Get all images in index")
-        c=self.db.cursor()
-        file=open("/tmp/sqlite_files.log", "w")
+        c = self.db.cursor()
+        file = open("/tmp/sqlite_files.log", "w")
         for (sourceFile,) in c.execute("select SourceFile from images order by SourceFile"):
-            file.write(sourceFile.encode('utf-8')+"\n")
+            file.write(sourceFile.encode('utf-8') + "\n")
         file.close()
 
     def __dumpImageFolder(self):
@@ -122,6 +131,7 @@ class PhotoIndex():
                     outfile.write(fullpath + "\n")
         outfile.close()
 
+# TODO
 def get_parser():
     parser = argparse.ArgumentParser(description='photo deduplication tool')
     parser.add_argument('query', metavar='QUERY', type=str, nargs='*',
@@ -141,10 +151,10 @@ def get_parser():
     return parser
                
 
-image_path="/mnt/hgfs/Pictures"
+image_path="/mnt/hgfs/pictures"
 photoIndex=PhotoIndex(image_path)
 photoIndex.create_index()
 new_images=photoIndex.fetch_new_images()
 photoIndex.insert_images(new_images)
-remaining_images=photoIndex.fetch_new_images()
-photoIndex.remove_duplicate(remaining_images)
+photoIndex.check_new_images()
+
