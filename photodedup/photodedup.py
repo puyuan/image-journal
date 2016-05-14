@@ -6,6 +6,9 @@ import argparse
 import exiftool
 import sqlite3
 import logging
+import tempfile
+import exifread
+import itertools
 from logging.config import fileConfig
 from os.path import join
 import shutil
@@ -33,7 +36,7 @@ class PhotoIndex():
 
     def insert_images(self, new_images):
         c = self.db.cursor()
-        for metadataList in self.__get_images_metadata(new_images):
+        for metadataList in self.__exifread_get_metadata(new_images):
 		
             columns= [(d.get("EXIF:CreateDate", d.get("File:FileModifyDate","")),
                        d.get("EXIF:CreateDate", ""),
@@ -50,18 +53,62 @@ class PhotoIndex():
             c.executemany("insert or ignore into images values (?, ?, ? ,?, ?, ?)", columns)
             self.db.commit()
 
+    def insert_exifread_images(self, new_images):
+        c = self.db.cursor()
+        count=0
+        for metadataList in split_every(3000,self.__exifread_get_metadata(new_images)):
+
+            columns = [(str(d.get("EXIF DateTimeOriginal", d.get("Image DateTime", ""))),
+                        str(d.get("EXIF DateTimeOriginal", "")),
+                        str(d.get("GPS GPSLatitude", "")),
+                        str(d.get("GPS GPSLongitude", "")),
+                        str(d.get("GPS GPSAltitude", "")),
+                        unicode(d.get("SourceFile", ""), "utf-8")
+                        ) for d in metadataList]
+
+            count+=len(columns)
+            logger.info("Processed %d images..." % count )
+
+            for metadata in metadataList:
+                logger.debug("inserting %s", metadata.get("SourceFile", ""))
+
+
+            c.executemany("insert or ignore into images values (?, ?, ? ,?, ?, ?)", columns)
+            self.db.commit()
+
 
     def fetch_new_images(self):
         logger.info("Fetching new images")
-        self.__dumpDB()
-        self.__dumpImageFolder()
+        dbfile=self.__dumpDB()
+        folderfile=self.__dumpImageFolder()
+        logger.debug(folderfile)
+        logger.debug(dbfile)
+        with open(dbfile)  as a, open(folderfile) as b:
+          #  lines1 = set(map(str.rstrip, f))
+          #  return lines1.difference(map(str.rstrip, f2))
+          done = object()
+          aNext = next(a, done)
+          bNext = next(b, done)
 
-        with open('/tmp/imagefolder_files.log')  as f, open('/tmp/sqlite_files.log') as f2:
-            lines1 = set(map(str.rstrip, f))
-            return lines1.difference(map(str.rstrip, f2))
+          while (aNext is not done) and (bNext is not done):
+              if (aNext > bNext):
+                  yield bNext.rstrip()
+                  bNext = next(b, done)
+              elif (aNext < bNext):
+                  aNext=next(a, done)
+              else: # equals
+                  bNext = next(b, done)
+                  aNext = next(a, done)
+
+          while bNext is not done:
+            yield bNext.rstrip()
+            bNext = next(b, done)
+
+
 
     def check_new_images(self):
         logger.info("checking new images")
+
         fileList=[image for image in self.fetch_new_images()]
         if not fileList:
             logger.info("list is empty")
@@ -71,6 +118,20 @@ class PhotoIndex():
         for file in fileList:
             logger.info(file)
         return True
+
+    def print_new_images_count(self):
+        logger.info("Estimated new images: %d", self.get_new_images_count())
+
+    def get_new_images_count(self):
+        logger.info("checking new images")
+
+        count=0
+        for image in self.fetch_new_images():
+            count+=1
+        return count
+
+
+
 
 
     def remove_images(self, duplicate_images):
@@ -101,8 +162,10 @@ class PhotoIndex():
                     try:
                         logger.info("Processing with ExifTool. \n Please wait..")
                         yield et.get_tags_batch(tags, fileList)
-                    except:
-                        logger.warn("exiftool could not process, perhaps folder is empty?")
+
+                    except Exception as ex:
+                        logging.exception("exiftool could not process, perhaps folder is empty?")
+
                     fileList=[]
             # process remaining list
             if fileList:
@@ -110,26 +173,43 @@ class PhotoIndex():
                     yield et.get_tags_batch(tags, fileList)
                 except:
                     logger.warn("exiftool could not process, perhaps folder is empty?")
+    def __exifread_get_metadata(self, images):
+        for filename in images:
+            f=open(filename)
+            tags = exifread.process_file(f, details=False)
+            tags["SourceFile"]=filename
+            yield tags
+            f.close()
 
     def __dumpDB(self):
         logger.info("Get all images in index")
         c = self.db.cursor()
-        file = open("/tmp/sqlite_files.log", "w")
+        file = tempfile.NamedTemporaryFile(delete=False)
         for (sourceFile,) in c.execute("select SourceFile from images order by SourceFile"):
             file.write(sourceFile.encode('utf-8') + "\n")
         file.close()
+        return file.name
 
     def __dumpImageFolder(self):
         logger.info("Get all images in image folder")
-        outfile = open("/tmp/imagefolder_files.log", "w")
+        outfile = tempfile.NamedTemporaryFile(delete=False)
         for root, dirs, files in os.walk(self.image_folder_path):
             dirs.sort()
             files.sort()
             for file in files:
+                
                 if ".jpg" in file.lower():
                     fullpath=join(root, file)
                     outfile.write(fullpath + "\n")
         outfile.close()
+        return outfile.name
+
+def split_every(n, iterable):
+    i = iter(iterable)
+    piece = list(itertools.islice(i, n))
+    while piece:
+        yield piece
+        piece = list(itertools.islice(i, n))
 
 # TODO
 def get_parser():
@@ -151,10 +231,11 @@ def get_parser():
     return parser
                
 
-image_path="/mnt/hgfs/pictures"
+image_path="/cygdrive/f/cleaned_Photos"
 photoIndex=PhotoIndex(image_path)
 photoIndex.create_index()
+photoIndex.print_new_images_count()
 new_images=photoIndex.fetch_new_images()
-photoIndex.insert_images(new_images)
+photoIndex.insert_exifread_images(new_images)
 photoIndex.check_new_images()
 
