@@ -23,7 +23,7 @@ class PhotoIndex():
         self.image_folder_path=image_folder_path
 
     def create_index(self):
-        logger.info("Create table if not exists")
+        logger.info("Create index if not exists")
         c = self.db.cursor()
         c.execute('''create table if not exists images
 				 (timestamp text primary key,
@@ -56,7 +56,7 @@ class PhotoIndex():
     def insert_exifread_images(self, new_images):
         c = self.db.cursor()
         count=0
-        for metadataList in split_every(3000,self.__exifread_get_metadata(new_images)):
+        for metadataList in split_every(1000,self.__exifread_get_metadata(new_images)):
 
             columns = [(str(d.get("EXIF DateTimeOriginal", d.get("Image DateTime", ""))),
                         str(d.get("EXIF DateTimeOriginal", "")),
@@ -79,28 +79,28 @@ class PhotoIndex():
 
     def fetch_new_images(self):
         logger.info("Fetching new images")
-        dbfile=self.__dumpDB()
-        folderfile=self.__dumpImageFolder()
-        logger.debug(folderfile)
-        logger.debug(dbfile)
-        with open(dbfile)  as a, open(folderfile) as b:
-          #  lines1 = set(map(str.rstrip, f))
-          #  return lines1.difference(map(str.rstrip, f2))
-          done = object()
-          aNext = next(a, done)
-          bNext = next(b, done)
+        a=self.__dumpDB()
+        b=self.__dumpImageFolder()
 
-          while (aNext is not done) and (bNext is not done):
-              if (aNext > bNext):
-                  yield bNext.rstrip()
-                  bNext = next(b, done)
-              elif (aNext < bNext):
-                  aNext=next(a, done)
-              else: # equals
-                  bNext = next(b, done)
-                  aNext = next(a, done)
+        #  lines1 = set(map(str.rstrip, f))
+        #  return lines1.difference(map(str.rstrip, f2))
+        done = object()
+        aNext = next(a, done)
+        bNext = next(b, done)
 
-          while bNext is not done:
+        while (aNext is not done) and (bNext is not done):
+          logger.debug("aNext: %s, bnext %s"%(aNext, bNext))
+          if (aNext > bNext):
+              yield bNext.rstrip()
+              bNext = next(b, done)
+          elif (aNext < bNext):
+              aNext=next(a, done)
+          else: # equals
+              bNext = next(b, done)
+              aNext = next(a, done)
+
+        while bNext is not done:
+            logger.debug("aNext: %s, bnext %s" % (aNext, bNext))
             yield bNext.rstrip()
             bNext = next(b, done)
 
@@ -127,6 +127,7 @@ class PhotoIndex():
 
         count=0
         for image in self.fetch_new_images():
+            logger.debug("Counting image: %s"% image)
             count+=1
         return count
 
@@ -184,11 +185,11 @@ class PhotoIndex():
     def __dumpDB(self):
         logger.info("Get all images in index")
         c = self.db.cursor()
-        file = tempfile.NamedTemporaryFile(delete=False)
+
         for (sourceFile,) in c.execute("select SourceFile from images order by SourceFile"):
-            file.write(sourceFile.encode('utf-8') + "\n")
-        file.close()
-        return file.name
+            yield sourceFile.encode('utf-8')
+
+
 
     def __dumpImageFolder(self):
         logger.info("Get all images in image folder")
@@ -197,12 +198,10 @@ class PhotoIndex():
             dirs.sort()
             files.sort()
             for file in files:
-                
+
                 if ".jpg" in file.lower():
                     fullpath=join(root, file)
-                    outfile.write(fullpath + "\n")
-        outfile.close()
-        return outfile.name
+                    yield fullpath
 
 def split_every(n, iterable):
     i = iter(iterable)
@@ -234,7 +233,7 @@ def get_parser():
 image_path="/cygdrive/f/cleaned_Photos"
 photoIndex=PhotoIndex(image_path)
 photoIndex.create_index()
-photoIndex.print_new_images_count()
+#photoIndex.print_new_images_count()
 new_images=photoIndex.fetch_new_images()
 photoIndex.insert_exifread_images(new_images)
 photoIndex.check_new_images()
