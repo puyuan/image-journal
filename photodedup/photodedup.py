@@ -3,12 +3,11 @@
 import os
 import sys
 import argparse
-import exiftool
 import sqlite3
 import logging
-import tempfile
 import exifread
 import itertools
+
 from logging.config import fileConfig
 from os.path import join
 import shutil
@@ -19,13 +18,13 @@ logger = logging.getLogger()
 
 class PhotoIndex():
     def __init__(self, image_folder_path):
-        self.db=sqlite3.connect("images.sqlite")
+        self.conn=sqlite3.connect("images.sqlite")
         self.image_folder_path=image_folder_path
 
     def create_index(self):
         logger.info("Create index if not exists")
-        c = self.db.cursor()
-        c.execute('''create table if not exists images
+        cur = self.conn.cursor()
+        cur.execute('''create table if not exists images
 				 (timestamp text primary key,
 				  CreateDate text,
 				  GPSLatitude real,
@@ -34,29 +33,12 @@ class PhotoIndex():
 				  SourceFile   text
 				  )''')
 
+
+
     def insert_images(self, new_images):
-        c = self.db.cursor()
-        for metadataList in self.__exifread_get_metadata(new_images):
-		
-            columns= [(d.get("EXIF:CreateDate", d.get("File:FileModifyDate","")),
-                       d.get("EXIF:CreateDate", ""),
-                       d.get("EXIF:GPSLatitude", ""),
-                       d.get("EXIF:GPSLongitude", ""),
-                       d.get("EXIF:GPSAltitude", ""),
-                       d.get("SourceFile", "")
-                       )for d in metadataList]
-
-            for metadata in metadataList:
-                logger.info("inserting %s", metadata.get('SourceFile', ""))
-                logger.debug(metadata)
-
-            c.executemany("insert or ignore into images values (?, ?, ? ,?, ?, ?)", columns)
-            self.db.commit()
-
-    def insert_exifread_images(self, new_images):
-        c = self.db.cursor()
+        cur = self.conn.cursor()
         count=0
-        for metadataList in split_every(1000,self.__exifread_get_metadata(new_images)):
+        for metadataList in split_every(1000, self.__get_images_metadata(new_images)):
 
             columns = [(str(d.get("EXIF DateTimeOriginal", d.get("Image DateTime", ""))),
                         str(d.get("EXIF DateTimeOriginal", "")),
@@ -73,43 +55,42 @@ class PhotoIndex():
                 logger.debug("inserting %s", metadata.get("SourceFile", ""))
 
 
-            c.executemany("insert or ignore into images values (?, ?, ? ,?, ?, ?)", columns)
-            self.db.commit()
+            cur.executemany("insert or ignore into images values (?, ?, ? ,?, ?, ?)", columns)
+            self.conn.commit()
 
 
-    def fetch_new_images(self):
+    def get_new_images(self):
         logger.info("Fetching new images")
-        a=self.__dumpDB()
-        b=self.__dumpImageFolder()
+        dbImages=self.__get_db_images()
+        folderImages=self.__get_folder_images()
 
-        #  lines1 = set(map(str.rstrip, f))
-        #  return lines1.difference(map(str.rstrip, f2))
+        # use sorted iterator to find new images
         done = object()
-        aNext = next(a, done)
-        bNext = next(b, done)
+        dbNext = next(dbImages, done)
+        folderNext = next(folderImages, done)
 
-        while (aNext is not done) and (bNext is not done):
-          logger.debug("aNext: %s, bnext %s"%(aNext, bNext))
-          if (aNext > bNext):
-              yield bNext.rstrip()
-              bNext = next(b, done)
-          elif (aNext < bNext):
-              aNext=next(a, done)
+        while (dbNext is not done) and (folderNext is not done):
+          logger.debug("dbNext: %s, folderNext %s"%(dbNext, folderNext))
+          if (dbNext > folderNext):
+              yield folderNext.rstrip()
+              folderNext = next(folderImages, done)
+          elif (dbNext < folderNext):
+              dbNext=next(dbImages, done)
           else: # equals
-              bNext = next(b, done)
-              aNext = next(a, done)
+              folderNext = next(folderImages, done)
+              dbNext = next(dbImages, done)
 
-        while bNext is not done:
-            logger.debug("aNext: %s, bnext %s" % (aNext, bNext))
-            yield bNext.rstrip()
-            bNext = next(b, done)
+        while folderNext is not done:
+            logger.debug("dbNext: %s, folderNext %s" % (dbNext, folderNext))
+            yield folderNext.rstrip()
+            folderNext = next(folderImages, done)
 
 
 
     def check_new_images(self):
         logger.info("checking new images")
 
-        fileList=[image for image in self.fetch_new_images()]
+        fileList=[image for image in self.get_new_images()]
         if not fileList:
             logger.info("list is empty")
             return False
@@ -126,7 +107,7 @@ class PhotoIndex():
         logger.info("checking new images")
 
         count=0
-        for image in self.fetch_new_images():
+        for image in self.get_new_images():
             logger.debug("Counting image: %s"% image)
             count+=1
         return count
@@ -142,39 +123,12 @@ class PhotoIndex():
     def copy_duplicates(self):
       self.insert_new_images()
       count=0
-      for file in self.fetch_new_images():
+      for file in self.get_new_images():
           count+=1
           shutil.copy(file, '/tmp/test/%d.jpg'%(count))
 
 
-		  
     def __get_images_metadata(self, images):
-        tags=["ImageWidth", "ImageHeight", "SourceFile","CreateDate",
-			  "FileModifyDate", "GPSLatitude", "GPSLongitude", "GPSAltitude"]
-
-        with exiftool.ExifTool() as et:
-            fileList = []
-            count = 0
-            for filename in images:
-                fileList.append(filename)
-                logger.info('Extracting metadata for: %s', filename)
-                count += 1
-                if (count % 1000 == 0):
-                    try:
-                        logger.info("Processing with ExifTool. \n Please wait..")
-                        yield et.get_tags_batch(tags, fileList)
-
-                    except Exception as ex:
-                        logging.exception("exiftool could not process, perhaps folder is empty?")
-
-                    fileList=[]
-            # process remaining list
-            if fileList:
-                try:
-                    yield et.get_tags_batch(tags, fileList)
-                except:
-                    logger.warn("exiftool could not process, perhaps folder is empty?")
-    def __exifread_get_metadata(self, images):
         for filename in images:
             f=open(filename)
             tags = exifread.process_file(f, details=False)
@@ -182,18 +136,17 @@ class PhotoIndex():
             yield tags
             f.close()
 
-    def __dumpDB(self):
+    def __get_db_images(self):
         logger.info("Get all images in index")
-        c = self.db.cursor()
+        c = self.conn.cursor()
 
         for (sourceFile,) in c.execute("select SourceFile from images order by SourceFile"):
             yield sourceFile.encode('utf-8')
 
 
 
-    def __dumpImageFolder(self):
+    def __get_folder_images(self):
         logger.info("Get all images in image folder")
-        outfile = tempfile.NamedTemporaryFile(delete=False)
         for root, dirs, files in os.walk(self.image_folder_path):
             dirs.sort()
             files.sort()
@@ -233,8 +186,7 @@ def get_parser():
 image_path="/cygdrive/f/cleaned_Photos"
 photoIndex=PhotoIndex(image_path)
 photoIndex.create_index()
-#photoIndex.print_new_images_count()
-new_images=photoIndex.fetch_new_images()
-photoIndex.insert_exifread_images(new_images)
+new_images=photoIndex.get_new_images()
+photoIndex.insert_images(new_images)
 photoIndex.check_new_images()
 
