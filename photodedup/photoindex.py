@@ -44,6 +44,38 @@ class PhotoIndex():
             sys.stdout.flush()
         return dict
 
+    def fetch_new_images(self, root):
+        return self.find_images(root)
+
+    def fetch_deleted_images(self, root):
+        return self.find_images(root, "deleted")
+
+    def find_images(self, root, image_status="new"):
+        new_images_list=[]
+
+        dict=self.dict
+        last_accessed_time=dict.get('last_accessed_time', '')
+        root_entries=dict.get('roots', {})
+
+        #print dict.get(root)
+        dirs, files, create_time, modified_time = root_entries.get(root, [{},{}, 0, 0])
+        for name, (path, create_time, modified_time)  in dirs.iteritems():
+            if modified_time != last_accessed_time:
+                print  (path, modified_time)
+        for name, (path, create_time, modified_time)  in files.iteritems():
+            if modified_time < last_accessed_time and "deleted"== image_status:
+                print path, "file does not exist"
+                print modified_time, last_accessed_time
+                new_images_list.append(path)
+            elif create_time == last_accessed_time and "new" == image_status:
+                new_images_list.append(path)
+
+
+        for name, (path, create_time, modified_time) in dirs.iteritems():
+             new_images_list+=self.fetch_new_images(path)
+        return new_images_list
+
+
     def printdict(self, root):
 
         dict=self.dict

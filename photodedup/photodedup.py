@@ -7,7 +7,7 @@ import sqlite3
 import logging
 import exifread
 import itertools
-
+from  photoindex import PhotoIndex
 from logging.config import fileConfig
 from os.path import join
 import shutil
@@ -16,7 +16,7 @@ import shutil
 fileConfig('logging_config.ini')
 logger = logging.getLogger()
 
-class PhotoIndex():
+class PhotoDedup():
     def __init__(self, image_folder_path):
         self.conn=sqlite3.connect("images.sqlite")
         self.image_folder_path=image_folder_path
@@ -58,6 +58,13 @@ class PhotoIndex():
             cur.executemany("insert or ignore into images values (?, ?, ? ,?, ?, ?)", columns)
             self.conn.commit()
 
+    def remove_images(self, new_images):
+        cur = self.conn.cursor()
+        count=0
+        for imagelist in split_every(1000, new_images):
+            columns = [(image,) for image in imagelist]
+            cur.executemany("delete from images where SourceFile = ? ", columns)
+            self.conn.commit()
 
     def get_new_images(self):
         logger.info("Fetching new images")
@@ -116,9 +123,9 @@ class PhotoIndex():
 
 
 
-    def remove_images(self, duplicate_images):
-      for file in duplicate_images:
-          os.remove(file)
+#    def remove_images(self, duplicate_images):
+#      for file in duplicate_images:
+#          os.remove(file)
 
     def copy_duplicates(self):
       self.insert_new_images()
@@ -183,10 +190,14 @@ def get_parser():
     return parser
                
 
-image_path="/cygdrive/f/cleaned_Photos"
-photoIndex=PhotoIndex(image_path)
-photoIndex.create_index()
-new_images=photoIndex.get_new_images()
-photoIndex.insert_images(new_images)
-photoIndex.check_new_images()
+image_path=u"/mnt/hgfs/Pictures/"
+photoDedup=PhotoDedup(image_path)
+photoDedup.create_index()
+photoIndex=PhotoIndex()
+photoIndex.regularwalk(image_path)
+photoIndex.savedict()
+new_images=photoIndex.fetch_new_images(image_path)
+deleted_images=photoIndex.fetch_deleted_images(image_path)
+photoDedup.remove_images(deleted_images)
+photoDedup.insert_images(new_images)
 
