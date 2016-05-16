@@ -53,9 +53,10 @@ def printDict(dict, root):
             print  (path, modified_time)
     for name, (path, create_time, modified_time)  in files.iteritems():
         if modified_time < last_accessed_time:
-            print path
+            print path, "changed"
+            print modified_time, last_accessed_time
         elif create_time == last_accessed_time:
-            print path
+            print path, "new_files"
 
 
     for name, (path, create_time, modified_time) in dirs.iteritems():
@@ -100,7 +101,8 @@ def loadDict():
 
 
 
-path="/cygdrive/c/Windows/Temp"
+path="/cygdrive/c/Users/paul.yuan/AppData/Local/Google/Chrome/" \
+      "User Data/Default/Cache"
 dict=regularWalk(path, loadDict())
 printDict(dict, path)
 #checkPruning(dict)
