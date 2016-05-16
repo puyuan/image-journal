@@ -1,65 +1,107 @@
-import scandir
 import os.path
 import time
+import sys
+import pickle
+# Use the built-in version of scandir/walk if possible, otherwise
+# use the scandir module version
+try:
+        from os import walk
+except ImportError:
+        from scandir import scandir, walk
+
 # Walk into directories in filesystem
 # Ripped from os module and slightly modified
 # for alphabetical sorting
 #
 from os.path import join, isdir, islink
 
-def regularWalk(top):
-    dict={}
+def regularWalk(top, dict={}):
     epoch=time.time()
-    for root, dirs, files in scandir.walk(top):
-        dict[root]=({}, {}, epoch)
+    dict['last_accessed_time']=epoch
+    root_entries=dict.setdefault('roots', {})
+    countfiles=0
+    countdirs=0
+
+    for root, dirs, files in walk(top):
+        root_entry=root_entries.setdefault(root,[{}, {}, epoch, epoch])
+        root_entry[3]=epoch
+        
         for dir in dirs:
             path=join(root, dir)
-            dict[root][0][dir]=(path, epoch)
-            #print path
+            dir_entry=root_entry[0].setdefault(dir, [path, epoch, epoch])
+            dir_entry[2]=epoch
         for file in files:
             path=join(root, file)
-            dict[root][1][file]=(path, epoch)
-            #print path
+            file_entry=root_entry[1].setdefault(file, [path, epoch, epoch])
+            file_entry[2]=epoch
+
+        countfiles+=len(files)
+        countdirs+=len(dirs)
+        sys.stdout.write("Processing %d dirs, %d files \r" %(countdirs, countfiles))
+        sys.stdout.flush()
     return dict
 
 def printDict(dict, root):
 
-    print root.encode("utf-8")
+    last_accessed_time=dict.get('last_accessed_time', '')
+    root_entries=dict.get('roots', {})
+
     #print dict.get(root)
-    dirs, files, epoch = dict.get(root, ({},{}, 0))
-    print epoch
-    for name, (path, timestamp ) in dirs.iteritems():
-        print  path.encode("utf-8"), timestamp
-    for name, (path, timestamp) in files.iteritems():
-        print  path.encode("utf-8"), timestamp
+    dirs, files, create_time, modified_time = root_entries.get(root, [{},{}, 0, 0])
+    for name, (path, create_time, modified_time)  in dirs.iteritems():
+        if modified_time != last_accessed_time:
+            print  (path, modified_time)
+    for name, (path, create_time, modified_time)  in files.iteritems():
+        if modified_time < last_accessed_time:
+            print path
+        elif create_time == last_accessed_time:
+            print path
 
 
-    for name, (path, timestamp) in dirs.iteritems():
+    for name, (path, create_time, modified_time) in dirs.iteritems():
         printDict(dict, path)
 
+def checkPruning(dict):
+    last_accessed_time=dict.get('last_accessed_time', '')
+    root_entries=dict.get('roots')
+    print (last_accessed_time)
+
+    for root, (dirs, files, create_time, modified_time) in root_entries.iteritems():
+        if not files:
+            continue
+
+        for name, (path, create_time, modified_time)  in dirs.iteritems():
+            if modified_time != last_accessed_time:
+                print  (path.encode("utf-8"), modified_time)
+        for name, (path, create_time, modified_time)  in files.iteritems():
+            print create_time
+            if modified_time < last_accessed_time:
+                print path
+            elif create_time == last_accessed_time:
+                print path
 
 
 
+def saveDict(dict):
+    output = open('dict.pkl', 'wb')
+    # Pickle dictionary using protocol 0.
+    pickle.dump(dict, output)
+    output.close()
 
-def entry_compare(entry1, entry2):
-    return entry1.name > entry2.name
+def loadDict():
+    try:
+        file = open('dict.pkl', 'rb')
+        # Pickle dictionary using protocol 0.
+        output=pickle.load(file)
+        file.close()
+    except:
+        return {}
+    return output
 
 
 
-def sortedWalk(top):
-
-
-    dir_entries = scandir.scandir(top)
-    entries=[entry for entry in dir_entries]
-    entries.sort(entry_compare)
-
-    for entry in entries:
-
-        if entry.is_dir():
-           for file in  sortedWalk(entry.path):
-               yield file
-        else:
-            yield entry.path
-
-dict=regularWalk("/cygdrive/f/Cleaned_Photos")
-printDict(dict, "/cygdrive/f/Cleaned_Photos")
+path="/cygdrive/c/Windows/Temp"
+dict=regularWalk(path, loadDict())
+printDict(dict, path)
+#checkPruning(dict)
+saveDict(dict)
