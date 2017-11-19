@@ -68,20 +68,30 @@ $(function(){
     }
 
     // add thumbnails to gallery, but don't initialize it yet. 
-    var link=$("<a>").attr({href: item.src, title:item.CreateDate, class: "swipebox"});
-    var thumb=$("<img>").attr({"safe-src": item.thumb});
-    link.append(thumb);
-    gallery.append(link);
+    //var link=$("<a>").attr({href: item.src, title:item.CreateDate, class: "swipebox"});
+    var thumb = addThumbEvent(item,)
+    //link.append(thumb);
+    gallery.append(thumb);
 
 
   }
 
-$(".swipebox").swipebox();
+//$(".swipebox").swipebox();
 checkVisible();
 
 
 
 })
+
+function addThumbEvent(item){
+ var thumb=$("<img>").attr({"safe-src": item.thumb});
+
+
+    thumb[0].addEventListener("click", function(){
+       console.log(item)
+    });
+    return thumb;
+}
 
 $(window).scroll(checkVisible)
 

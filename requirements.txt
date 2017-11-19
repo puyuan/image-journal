@@ -1,0 +1,4 @@
+photodedup
+python-dateutil
+jrnl
+flask
