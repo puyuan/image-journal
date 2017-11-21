@@ -47,16 +47,54 @@ function createGallery(gallery){
   });
 }
 
+journalData = {};
+function loadjournal(){
+fetch('/journal')
+  .then(
+    function(response) {
+      if (response.status !== 200) {
+        console.log('Looks like there was a problem. Status Code: ' +
+          response.status);
+        return;
+      }
+
+      // Examine the text in the response
+      response.json().then(function(data) {
+
+      for (var i = 0; i < data.entries.length; i++){
+      var entry = data.entries[i];
+      var timestamp = entry.date +"T" + entry.time
+        journalData[timestamp] = entry;
+      }
+            loadGallery();
+
+
+      });
+
+    }
+  )
+  .catch(function(err) {
+    console.log('Fetch Error :-S', err);
+  });
+
+}
+
+
 
 
 $(function(){
+   loadjournal();
+
+})
+
+function loadGallery(){
   var group=""
   var gallery=""
   for (var i=0; i< gallery_images.length; i++){
 
     var item=gallery_images[i];
 
-    // create new week 
+    // create new week
     if(item.group!=group){
       var header=$("<h3>").html(item.group);
       group=item.group;
@@ -67,9 +105,9 @@ $(function(){
 
     }
 
-    // add thumbnails to gallery, but don't initialize it yet. 
+    // add thumbnails to gallery, but don't initialize it yet.
     //var link=$("<a>").attr({href: item.src, title:item.CreateDate, class: "swipebox"});
-    var thumb = addThumbEvent(item,)
+    var thumb = addThumbEvent(item)
     //link.append(thumb);
     gallery.append(thumb);
 
@@ -79,17 +117,55 @@ $(function(){
 //$(".swipebox").swipebox();
 checkVisible();
 
+var submitButton = document.getElementById("submit");
+submitButton.addEventListener("click", function(){
+  var journal = document.getElementById("journal");
+  var item = JSON.parse(journal.dataset.item);
+  var content = document.getElementById("journal_entry").value;
+
+  fetch("/journal", {
+    method: 'post',
+    headers: {
+      "Content-type": "application/x-www-form-urlencoded; charset=UTF-8"
+    },
+    body: 'timestamp= ' + item["CreateDate"] +  '&content=' + content
+  });
+
+});
 
 
-})
+}
 
 function addThumbEvent(item){
  var thumb=$("<img>").attr({"safe-src": item.thumb});
 
+ item.content = journalData[item["CreateDate"].substring(0,16)]
+ if (item.content){
+         thumb.addClass("glow");
+ }
+ console.log(journalData[item["CreateDate"].substring(0,16)],item["CreateDate"].substring(0,16) )
+
 
     thumb[0].addEventListener("click", function(){
        console.log(item)
+       var journal_title = document.getElementById("journal_title");
+       var journal = document.getElementById("journal");
+       var journal_entry = document.getElementById("journal_entry");
+
+       journal_title.innerHTML = item["CreateDate"]
+       if(item.content){
+        journal_entry.value = item.content.title + " "+ item.content.body;
+        }
+
+       else
+        journal_entry.value = "";
+       journal.showModal();
+       journal.dataset.item = JSON.stringify(item);
     });
+
+
+
+
     return thumb;
 }
 

@@ -2,3 +2,4 @@ photodedup
 python-dateutil
 jrnl
 flask
+gunicorn
