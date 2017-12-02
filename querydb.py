@@ -7,87 +7,72 @@ from dateutil import relativedelta
 from math import ceil
 import re
 import hashlib
+import logging
+
+PHOTO_INDEX_PATH = os.path.join(os.path.expanduser("~"), ".photoindex", "images.sqlite")
 
 
-def retrieveval(dic, key):
-    if(dic.has_key(key)):
-        return dic[key]
-    else:
-        return ""
+
+def configure_logger():
+    logging.basicConfig()
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    return logger
+
+logger = configure_logger()
+
+def connect_database():
+    db = sqlite3.connect(PHOTO_INDEX_PATH)
+    db.row_factory=sqlite3.Row
+    return  db
+
+def gen_html():
+    pass
+
+def gen_gallery_file():
+    gallery_file = open("static/gallery.json", "w")
 
 
-def week_of_month(dt):
-    first_day = dt.replace(day=1)
-    dom = dt.day
-    adjusted_dom = dom + first_day.weekday()
-    return int(ceil(adjusted_dom/7.0))
+def get_images():
+    print("loading sqlite file...")
+    month=''
+    year=''
+    current_timestamp= datetime(1933,2, 1)
+    images=[]
 
-photoindex_path = os.path.join(os.path.expanduser("~"), ".photoindex", "images.sqlite")
-db = sqlite3.connect(photoindex_path)
-db.row_factory=sqlite3.Row
-c = db.cursor()
+    with connect_database() as db:
+        c = db.cursor()
+        for row in c.execute("select * from images  order by CREATEDATE desc"):
+            row_dic = dict(row)
 
-print("loading sqlite file...")
+            # Correct Date Format
+            try:
+                correctedDate = re.sub(r'(\d{4}):(\d{2}):(\d{2}\s+\d{2}:\d{2}:\d{2}).*', r'\1-\2-\3', row_dic["CreateDate"])
+                parsedDate=parse(correctedDate)
+                row_dic["CreateDate"] = parsedDate.isoformat()
+            except:
+                continue
 
-html="<html><body>"
-month=''
-year=''
-timestamp= datetime(1933,2, 1)
-images=[]
-imageDir="images_original"
-gallery_file = open("static/gallery.json", "w")
-IMAGE_DIR = "static/"
 
-for row in c.execute("select * from images  order by CREATEDATE desc"):
-    dic = dict(row)
-    sourceFile = dic["SourceFile"]
-    correctedDate=re.sub(r'(\d{4}):(\d{2}):(\d{2}\s+\d{2}:\d{2}:\d{2}).*',r'\1-\2-\3', dic["CreateDate"])
-    print(correctedDate)
-    try:
-        parsedDate=parse(correctedDate)
-        dic["CreateDate"] = parsedDate.isoformat()
-    except:
-        continue
-    if  parsedDate.year != year or parsedDate.month != month:
-        year = parsedDate.year
-        month = parsedDate.month
-        html += "<h3>%s/%s</h3>"%(year, month)
-        imageDir = "static/images_original/%s/%s"%(year, month)
-        try:
-            os.makedirs(imageDir)
-        except:
-            continue
-    photo_timestamp = parsedDate.strftime("%s")
-    print(photo_timestamp)
+            time_diff= current_timestamp - parsedDate
+            if abs(time_diff.total_seconds()) < 300 :
+                continue
+            else:
+                photo_timestamp = parsedDate.strftime("%s")
+                row_dic["thumb"] = "static/images/%s_t.jpg" % photo_timestamp
+                row_dic["group"] = "%d-%d"%(parsedDate.year,parsedDate.month)
+                row_dic["date"] = parsedDate.date().isoformat()
+                images.append(row_dic)
+                sourceFile = row_dic["SourceFile"]
+                if (not os.path.isfile("static/images/%s_t.jpg"%photo_timestamp)):
+                    cmd = "convert -auto-orient -thumbnail x300 \"%s\" static/images/%s_t.jpg" % (sourceFile, photo_timestamp)
+                    logger.info("Converting file \n %s", cmd)
+                    os.system(cmd)
+                current_timestamp = parsedDate
 
-    delta= timestamp - parsedDate
-    print(parsedDate, timestamp)
-    print(delta.days, delta.seconds)
 
-    print(abs(delta.total_seconds()) < 300 )
-    if abs(delta.total_seconds()) < 300 :
-        continue
-    else:
-        html += "<img src='images/%s.jpg'></img><br/>"%(photo_timestamp)
-        dic["thumb"] = "images/%s_t.jpg" % photo_timestamp
-        dic["src"] = "images_wide/%s.jpg" % photo_timestamp
-        dic["group"] = "%d-%d"%(parsedDate.year,parsedDate.month)
-        dic["date"] = parsedDate.date().isoformat()
-        images.append(dic)
-        sourceFile = dic["SourceFile"]
-        print(sourceFile, photo_timestamp)
-        if (not os.path.isfile("static/images/%s_t.jpg"%photo_timestamp)):
-            cmd = "convert -auto-orient -thumbnail x300 \"%s\" static/images/%s_t.jpg" % (sourceFile, photo_timestamp)
-            print(cmd)
-            os.system(cmd)
-        #if (not os.path.isfile("%s/%s.jpg"%(imageDir, photo_timestamp))):
-        #    os.system("convert  \"%s\" -channel rgb -auto-level  -resize 1920x1080^ -gravity center   -auto-orient -quality 86   %s/%s.jpg" % (sourceFile, imageDir, photo_timestamp))
+    return images
 
-        timestamp = parsedDate
-
-html += "</body></html>"
-gallery_file.write("gallery_images=" + json.dumps(images))
-
-db.close()
-
+if __name__ == "__main__":
+    get_images()
 

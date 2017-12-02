@@ -1,0 +1,5 @@
+static/images
+.idea
+__pycache
+*.pyc
+venv

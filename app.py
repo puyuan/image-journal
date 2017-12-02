@@ -1,14 +1,26 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
+from querydb import get_images
+import journal
 import json
 import os
 
 app = Flask(__name__)
 
-@app.route("/index", methods=["GET"])
-def index():
-    return ""
+@app.route("/gallery", methods=["GET"])
+def render_gallery_page():
+    return render_template("gallery.html")
 
-@app.route("/journal", methods= ["POST"])
+@app.route("/journal", methods=["GET"])
+def render_journal_page():
+    return render_template("journal.html")
+
+@app.route("/api/gallery/images", methods=["GET"])
+def get_image_data():
+    return jsonify({
+        "images" : get_images()
+    })
+
+@app.route("/api/journal", methods= ["POST"])
 def createjounal():
     timestamp = request.form.get("timestamp")
     content = request.form.get("content", "")
@@ -19,11 +31,14 @@ def createjounal():
     os.system(cmd)
     return ""
 
-@app.route("/journal", methods= ["GET"])
-def getjournal():
-    cmd = "jrnl  --export json"
-    strresult = os.popen(cmd).read()
-    result = json.loads(strresult)
+@app.route("/api/journal", methods= ["GET"])
+def get_journal_json():
+    result = journal.get_journal()
+    return jsonify(result)
+
+@app.route("/api/journal/combined", methods= ["GET"])
+def get_combined_journal_json():
+    result = journal.get_combined_journal()
     return jsonify(result)
 
 
