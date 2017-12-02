@@ -5,7 +5,7 @@ from dateutil.parser import parse
 from datetime import timedelta
 import json
 
-from querydb import get_images
+from gallery import get_images
 
 def get_journal():
     cmd = "jrnl  --export json"

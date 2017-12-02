@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, render_template
-from querydb import get_images
+from gallery import get_images
 import journal
 import json
 import os
